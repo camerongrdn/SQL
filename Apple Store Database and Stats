@@ -1,0 +1,30 @@
+-- Create an Apple Store database
+
+CREATE TABLE Apple_Store_items (id INTEGER PRIMARY KEY, item TEXT, price INTEGER, quantity INTEGER, type TEXT, age INTEGER);
+
+INSERT INTO Apple_Store_items VALUES (1, "MacBook Air 15", 1299, 20, "computer", 0);
+INSERT INTO Apple_Store_items VALUES (2, "MacBook Air 13", 999, 20, "computer", 2);
+INSERT INTO Apple_Store_items VALUES (3, "MacBook Pro 13", 1299, 15, "computer", 1);
+INSERT INTO Apple_Store_items VALUES (4, "Mac Mini", 599, 10, "computer", 0);
+INSERT INTO Apple_Store_items VALUES (5, "iMac", 1299, 10, "computer", 2);
+INSERT INTO Apple_Store_items VALUES (6, "iPad Pro", 799, 30, "tablet", 1);
+INSERT INTO Apple_Store_items VALUES (7, "iPad", 449, 40, "tablet", 1);
+INSERT INTO Apple_Store_items VALUES (8, "iPad Air", 599, 20, "tablet", 1);
+INSERT INTO Apple_Store_items VALUES (9, "iPad Mini", 499, 10, "tablet", 2);
+INSERT INTO Apple_Store_items VALUES (10, "iPhone 14 Pro Max", 1099, 40, "phone", 1);
+INSERT INTO Apple_Store_items VALUES (11, "iPhone 14 Pro", 999, 40, "phone", 1);
+INSERT INTO Apple_Store_items VALUES (12, "iPhone 14 Plus", 899, 40, "phone", 1);
+INSERT INTO Apple_Store_items VALUES (13, "iPhone 13", 699, 10, "phone", 2);
+INSERT INTO Apple_Store_items VALUES (14, "iPhone 12", 599, 5, "phone", 3);
+INSERT INTO Apple_Store_items VALUES (15, "Watch Ultra", 799, 30, "watch", 0);
+INSERT INTO Apple_Store_items VALUES (16, "Watch Series 8", 399, 20, "watch", 1);
+INSERT INTO Apple_Store_items VALUES (17, "Watch SE", 249, 10, "watch", 1);
+
+-- Display the database ordered by price.
+SELECT * FROM Apple_Store_items ORDER BY price desc;
+
+-- What is the average price of a tablet at the Apple Store?
+SELECT AVG(price) "avg tablet price" FROM Apple_Store_items WHERE type="tablet";
+
+-- What is the average price of an Apple Store product by its age (years since release)?
+SELECT age,ROUND(AVG(price)) "avg price" FROM Apple_Store_items GROUP BY age;
