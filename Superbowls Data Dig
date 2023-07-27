@@ -89,6 +89,13 @@ SELECT winner, ROUND(AVG(winner_pts)) AS avg_points, CASE
     ELSE "average"
     END AS "ranking"
 FROM superbowls GROUP BY winner ORDER BY avg_points desc;
+**OR with subquery**
+SELECT winner, ROUND(AVG(winner_pts)) AS avg_points, CASE
+    WHEN ROUND(AVG(winner_pts)) > (SELECT ROUND(AVG(winner_pts)) from superbowls) THEN "above average"
+    WHEN ROUND(AVG(winner_pts)) < (SELECT ROUND(AVG(winner_pts)) from superbowls) THEN "below average"
+    ELSE "average"
+    END AS "ranking"
+FROM superbowls GROUP BY winner ORDER BY avg_points desc;
 
 -- Sorting cities from most hosted Superbowl games to least.
 SELECT city, COUNT(city) AS total_games FROM superbowls GROUP BY city ORDER BY total_games desc;
