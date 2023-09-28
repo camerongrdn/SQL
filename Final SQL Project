@@ -100,3 +100,32 @@ JOIN chinook.artists ar ON ar.ArtistId=al.ArtistId
 JOIN chinook.media_types mt ON mt.MediaTypeId=tr.MediaTypeId
 WHERE mt.MediaTypeId IN (1,2,4,5)
 ORDER BY inv.InvoiceDate DESC;
+
+-- 8. What are the most popular/purchased programs?
+
+SELECT al.Title AS `Show, Season`, COUNT(invit.TrackId) AS `Number of Purchases`
+FROM chinook.tracks tr
+JOIN chinook.albums al ON al.AlbumId=tr.AlbumId
+RIGHT JOIN chinook.invoice_items invit ON invit.TrackId=tr.TrackId
+WHERE tr.MediaTypeId=3
+GROUP BY `Show, Season`
+ORDER BY `Number of Purchases` DESC;
+
+-- 9. Show customers who are not in Germany.
+
+SELECT CustomerId, FirstName ||' '|| LastName, Country
+FROM chinook.customers
+WHERE Country !='Germany';
+
+-- 10. Provide a query that shows the invoices associated with each sales agent.
+
+SELECT emp.EmployeeId, emp.FirstName ||' '|| emp.LastName, inv.InvoiceId
+FROM chinook.employees emp
+JOIN chinook.customers cust ON cust.SupportRepId=emp.EmployeeId
+JOIN chinook.invoices inv ON inv.CustomerId=cust.CustomerId;
+
+-- 11. What are the total sales for 2012?
+
+SELECT SUM(inv.Total) AS 'Total Sales'
+FROM chinook.invoices inv
+WHERE inv.InvoiceDate LIKE '2012%';
