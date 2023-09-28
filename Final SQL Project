@@ -77,7 +77,16 @@ WHERE tr.MediaTypeId IN (1,2,4,5)
 GROUP BY al.Title
 ORDER BY `Number of Tracks` DESC;
 
--- 8. What is the most recent music purchase and by who? (customer name, track name, album name, artist name, purchase date, purchase amount, limit 1)
+-- 6. Who are the top 5 customers who made purchases?
+
+SELECT cust.CustomerId, cust.FirstName ||' '|| cust.LastName AS `Customer Name`, SUM(inv.Total) AS `Total Purchase Amount`
+FROM chinook.customers cust
+JOIN chinook.invoices inv ON inv.CustomerId=cust.CustomerId
+GROUP BY `Customer Name`
+ORDER BY `Total Purchase Amount` DESC
+LIMIT 5;
+
+-- 7. What is the most recent music purchase and by who? (customer name, track name, album name, artist name, purchase date, purchase amount, limit 1)
 -- UNFINISHED, NEED TO NARROW DOWN TO TOP CUSTOMER
 
 SELECT cust.CustomerId, cust.FirstName ||' '|| LastName AS 'Customer Full Name', tr.Name AS 'Track Name', al.Title AS 'Album Name',
