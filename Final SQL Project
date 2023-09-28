@@ -178,3 +178,12 @@ JOIN chinook.invoice_items invit ON invit.InvoiceId=inv.InvoiceId
 GROUP BY cust.CustomerId;
 
 -- 18. Which customer has spent the most in the US?
+
+SELECT cust.CustomerId, cust.FirstName ||' '|| cust.LastName, cust.Country, SUM(inv.Total) AS TotalSpent
+FROM chinook.customers cust
+JOIN chinook.invoices inv
+ON cust.CustomerId=inv.CustomerId
+GROUP BY cust.CustomerId
+HAVING cust.Country='USA'
+ORDER BY TotalSpent DESC
+LIMIT 1;
