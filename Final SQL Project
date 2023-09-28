@@ -129,3 +129,52 @@ JOIN chinook.invoices inv ON inv.CustomerId=cust.CustomerId;
 SELECT SUM(inv.Total) AS 'Total Sales'
 FROM chinook.invoices inv
 WHERE inv.InvoiceDate LIKE '2012%';
+
+-- 12. Show supervisors and their direct reports.
+
+SELECT sup.FirstName ||' '|| sup.LastName AS SupervisorName, emp.FirstName ||' '|| emp.LastName AS EmployeeName
+FROM chinook.employees sup
+JOIN chinook.employees emp
+ON emp.ReportsTo=sup.EmployeeId
+ORDER BY SupervisorName;
+
+-- 13. Show customers whose company is on file.
+
+SELECT FirstName, LastName, Company
+FROM chinook.customers
+WHERE Company IS NOT NULL;
+
+-- 14. Show customers who purchased more than one item at one time.
+
+SELECT cust.FirstName, cust.LastName, inv.InvoiceId, inv.InvoiceDate, inv.Total
+FROM chinook.customers cust
+JOIN chinook.invoices inv ON cust.CustomerId=inv.CustomerId
+WHERE inv.Total<>0.99
+ORDER BY cust.LastName, inv.InvoiceDate;
+
+-- 15. How many employees belong to each role?
+
+SELECT FirstName, LastName, Title, COUNT(Title) OVER (PARTITION BY Title) As TotalEmpsInRole
+FROM chinook.employees
+ORDER BY Title;
+
+-- 16. What is the average amount spent per purchase? Who are the customers that spend more than average in one purchase?
+
+SELECT AVG(inv.Total)
+FROM chinook.invoices;
+
+SELECT cust.CustomerId, cust.FirstName, cust.LastName, ROUND(AVG(inv.Total), 2) AS AvgSpent
+FROM chinook.customers cust
+JOIN chinook.invoices inv ON cust.CustomerId=inv.CustomerId
+GROUP BY cust.CustomerId
+HAVING AvgSpent>(SELECT AVG(inv.Total) FROM chinook.invoices inv);
+
+-- 17. How many items has each customer purchased?
+
+SELECT cust.CustomerId, cust.FirstName, cust.LastName, COUNT(invit.InvoiceLineId) AS TotalItemsPurchased
+FROM chinook.customers cust
+JOIN chinook.invoices inv ON inv.CustomerId=cust.CustomerId
+JOIN chinook.invoice_items invit ON invit.InvoiceId=inv.InvoiceId
+GROUP BY cust.CustomerId;
+
+-- 18. Which customer has spent the most in the US?
