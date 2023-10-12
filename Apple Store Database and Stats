@@ -20,11 +20,11 @@ INSERT INTO Apple_Store_items VALUES (15, "Watch Ultra", 799, 30, "watch", 0);
 INSERT INTO Apple_Store_items VALUES (16, "Watch Series 8", 399, 20, "watch", 1);
 INSERT INTO Apple_Store_items VALUES (17, "Watch SE", 249, 10, "watch", 1);
 
--- Display the database ordered by price.
+-- 1. Display the database ordered by price.
 SELECT * FROM Apple_Store_items ORDER BY price desc;
 
--- What is the average price of a tablet at the Apple Store?
+-- 2. What is the average price of a tablet at the Apple Store?
 SELECT AVG(price) "avg tablet price" FROM Apple_Store_items WHERE type="tablet";
 
--- What is the average price of an Apple Store product by its age (years since release)?
+-- 3. What is the average price of an Apple Store product by its age (years since release)?
 SELECT age,ROUND(AVG(price)) "avg price" FROM Apple_Store_items GROUP BY age;
