@@ -54,6 +54,8 @@ VALUES
   ('A', '2021-01-07'),
   ('B', '2021-01-09');
 
+
+
 -- Queries:
 -- 1. What is the total amount each customer spent at the restaurant?
 
@@ -92,7 +94,18 @@ GROUP BY menu.product_name
 ORDER BY Number_of_Sales DESC
 LIMIT 1;
 
--- 5. Which item was the most popular for each customer? (COME BACK, SOLVE WITH RANK?)
+-- 5. Which item was the most popular for each customer?
+
+SELECT customer_id, product_name, number_of_sales FROM
+(
+SELECT sales.customer_id, menu.product_name, COUNT(sales.product_id) AS number_of_sales,
+RANK() OVER(PARTITION BY sales.customer_id ORDER BY COUNT(sales.product_id) DESC) AS order_rank
+FROM dannys_diner.sales sales
+JOIN dannys_diner.menu menu ON menu.product_id=sales.product_id
+GROUP BY sales.customer_id, menu.product_name
+)
+WHERE order_rank=1;
+
 -- 6. Which item was purchased first by the customer after they became a member?
 
 SELECT customer_id, product_name FROM
@@ -108,6 +121,69 @@ AS first_order
 WHERE order_rank=1;
 
 -- 7. Which item was purchased just before the customer became a member?
+
+SELECT customer_id, product_name FROM
+(
+SELECT sales.customer_id, menu.product_name, sales.order_date, members.join_date,
+RANK() OVER(PARTITION BY sales.customer_id ORDER BY sales.order_date DESC) AS order_rank
+FROM dannys_diner.members members
+JOIN dannys_diner.sales sales ON members.customer_id=sales.customer_id
+JOIN dannys_diner.menu menu ON menu.product_id=sales.product_id
+WHERE sales.order_date<members.join_date
+)
+AS final_order
+WHERE order_rank=1;
+
 -- 8. What is the total items and amount spent for each member before they became a member?
+
+SELECT members.customer_id, COUNT(sales.product_id) AS total_items, SUM(menu.price) AS total_spent
+FROM dannys_diner.members
+JOIN dannys_diner.sales sales on sales.customer_id=members.customer_id
+AND sales.order_date<members.join_date
+JOIN dannys_diner.menu menu ON menu.product_id=sales.product_id
+GROUP BY sales.customer_id;
+
 -- 9.  If each $1 spent equates to 10 points and sushi has a 2x points multiplier - how many points would each customer have?
+
+SELECT customer_id, SUM(points) AS total_points
+FROM
+(
+SELECT sales.customer_id,
+CASE WHEN menu.product_name='sushi' THEN menu.price * 20
+    ELSE menu.price * 10
+    END AS points
+FROM dannys_diner.sales sales
+JOIN dannys_diner.menu on menu.product_id=sales.product_id
+)
+GROUP BY customer_id;
+
+**** (COME BACK TO THIS ONE)
 -- 10. In the first week after a customer joins the program (including their join date) they earn 2x points on all items, not just sushi - how many points do customer A and B have at the end of January?
+
+Bonus Questions:
+1. Recreate the following table output using the available data:
+
+SELECT sales.customer_id, sales.order_date, menu.product_name, menu.price,
+CASE WHEN members.join_date<=sales.order_date THEN 'Y'
+    ELSE 'N'
+    END AS member
+FROM dannys_diner.sales sales
+JOIN dannys_diner.menu menu on menu.product_id=sales.product_id
+LEFT JOIN dannys_diner.members members on members.customer_id=sales.customer_id;
+
+2. Rank customer purchases by member status.
+
+SELECT *,
+CASE WHEN member='Y' THEN RANK() OVER(PARTITION BY customer_id, member ORDER BY order_date)
+    ELSE 'null'
+    END AS ranking
+FROM
+(
+SELECT sales.customer_id, sales.order_date, menu.product_name, menu.price,
+CASE WHEN members.join_date<=sales.order_date THEN 'Y'
+    ELSE 'N'
+    END AS member
+FROM dannys_diner.sales sales
+JOIN dannys_diner.menu menu on menu.product_id=sales.product_id
+LEFT JOIN dannys_diner.members members on members.customer_id=sales.customer_id
+) AS customer_data;
