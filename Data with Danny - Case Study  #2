@@ -1,0 +1,42 @@
+-- Cleaning table 2: Customer Orders
+-- Created secondary table with cleaned data to preserve original table and data.
+
+DROP TABLE IF EXISTS customer_orders_cleaned;
+CREATE TABLE customer_orders_cleaned AS
+SELECT order_id, customer_id, pizza_id,
+    CASE WHEN exclusions = 'null' OR exclusions IS NULL THEN ' '
+    ELSE exclusions
+    END AS exclusions,
+    CASE WHEN extras = 'null' OR extras IS NULL THEN ' '
+    ELSE extras
+    END AS extras,
+order_time
+FROM customer_orders;
+
+
+
+-- Cleaning table 3: Runner Orders
+-- Created secondary table with cleaned data to preserve original table and data.
+
+DROP TABLE IF EXISTS runner_orders_cleaned;
+CREATE TABLE runner_orders_cleaned AS
+SELECT order_id, runner_id,
+    CASE WHEN pickup_time = 'null' THEN ' '
+    ELSE pickup_time
+    END AS pickup_time,
+    CASE WHEN distance = 'null' THEN ' '
+    WHEN distance LIKE '%km' THEN TRIM(distance,'km')
+    ELSE distance
+    END AS distance,
+    CASE WHEN duration = 'null' THEN ' '
+    WHEN duration LIKE '%mins' THEN TRIM(duration, 'mins')
+    WHEN duration LIKE '%minute' THEN TRIM(duration, 'minute')
+    WHEN duration LIKE '%minutes' THEN TRIM(duration, 'minutes')
+    ELSE duration
+    END AS duration,
+    CASE WHEN cancellation = 'null' OR cancellation IS NULL THEN ' '
+    ELSE cancellation
+    END AS cancellation
+FROM runner_orders;
+
+--
