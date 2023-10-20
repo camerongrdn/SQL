@@ -29,7 +29,20 @@ SELECT COUNT(DISTINCT customer_id) AS total_customers,
 FROM subscriptions
 ) AS churn_data
 
--- How many customers have churned straight after their initial free trial - what percentage is this rounded to the nearest whole number?
+***-- 5. How many customers have churned straight after their initial free trial - what percentage is this rounded to the nearest whole number?
+HAVE NOT CALCULATED PERCENTAGE
+SELECT 
+    SUM(CASE WHEN plan_name = 'churn' AND plan_rank = 2 THEN 1
+    ELSE 0
+    END) AS churn_post_trial
+FROM
+(
+SELECT sub.customer_id, sub.plan_id, p.plan_name,
+RANK() OVER (PARTITION BY customer_id ORDER BY sub.start_date) AS plan_rank
+FROM subscriptions sub
+JOIN plans p on p.plan_id=sub.plan_id
+) AS plan_data
+
 -- What is the number and percentage of customer plans after their initial free trial?
 -- What is the customer count and percentage breakdown of all 5 plan_name values at 2020-12-31?
 -- How many customers have upgraded to an annual plan in 2020?
