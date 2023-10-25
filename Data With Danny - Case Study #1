@@ -157,8 +157,23 @@ JOIN dannys_diner.menu on menu.product_id=sales.product_id
 )
 GROUP BY customer_id;
 
-**** (COME BACK TO THIS ONE)
--- 10. In the first week after a customer joins the program (including their join date) they earn 2x points on all items, not just sushi - how many points do customer A and B have at the end of January?
+-- 10. In the first week after a customer joins the program (including their join date) they earn 2x points on all items,
+not just sushi - how many points do customer A and B have at the end of January?
+
+SELECT customer_id, SUM(points) AS total_Jan_points FROM
+(
+SELECT sales.customer_id,
+CASE WHEN sales.order_date BETWEEN members.join_date AND DATE(members.join_date, '+6 days') THEN menu.price * 20
+    WHEN menu.product_name='sushi' THEN menu.price * 20
+    ELSE menu.price * 10
+    END AS points,
+sales.order_date
+FROM dannys_diner.sales sales
+JOIN dannys_diner.menu menu ON menu.product_id=sales.product_id
+JOIN dannys_diner.members members ON members.customer_id=sales.customer_id
+WHERE sales.order_date LIKE '2021-01%'
+) AS Jan_data
+GROUP BY customer_id;
 
 Bonus Questions:
 1. Recreate the following table output using the available data:
