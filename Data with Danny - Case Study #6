@@ -1,23 +1,53 @@
 -- A. Digital Analysis
 -- 1. How many users are there?
 
-SELECT COUNT(DISTINCT user_id) FROM clique_bait.users;
+SELECT COUNT(DISTINCT user_id) FROM clique_bait.users AS user_count;
 
 -- 2. How many cookies does each user have on average?
 
-WITH CTE AS
+SELECT AVG(cookie_count) AS avg_cookie_count FROM
 (
 SELECT user_id, COUNT(cookie_id) as cookie_count
 FROM clique_bait.users
 GROUP BY user_id
-)
-SELECT AVG(cookie_count) FROM CTE
+) AS cookie_data;
 
--- 3. What is the unique number of visits by all users per month?
+***-- 3. What is the unique number of visits by all users per month?
 
-What is the number of events for each event type?
-What is the percentage of visits which have a purchase event?
-What is the percentage of visits which view the checkout page but do not have a purchase event?
-What are the top 3 pages by number of views?
-What is the number of views and cart adds for each product category?
-What are the top 3 products by purchases?
+-- 4. What is the number of events for each event type?
+
+SELECT id.event_name, COUNT(events.event_type) AS event_count
+FROM clique_bait.events events
+JOIN clique_bait.event_identifier id ON id.event_type=events.event_type
+GROUP BY id.event_name;
+
+***-- 5. What is the percentage of visits which have a purchase event?
+DIVISION RETURNS 0 AGAIN
+SELECT (purchases/total_visits)*100 AS purchase_percentage FROM
+(
+SELECT COUNT(visit_id) AS total_visits,
+    SUM(CASE WHEN event_type=3 THEN 1 ELSE 0 END) AS purchases
+FROM events
+) AS purchase_data
+
+***--- 6. What is the percentage of visits which view the checkout page but do not have a purchase event?
+
+--- 7. What are the top 3 pages by number of views?
+
+SELECT events.page_id, hierarchy.page_name, COUNT(visit_id) AS visit_count
+FROM events
+JOIN page_hierarchy hierarchy ON events.page_id=hierarchy.page_id
+GROUP BY hierarchy.page_name
+ORDER BY COUNT(visit_id) DESC LIMIT 3;
+
+-- 8. What is the number of views and cart adds for each product category?
+
+SELECT hierarchy.product_category, COUNT(visit_id) AS visit_count,
+    SUM(CASE WHEN id.event_type=2 THEN 1 ELSE 0 END) AS cart_adds
+FROM events
+JOIN page_hierarchy hierarchy ON events.page_id=hierarchy.page_id
+JOIN event_identifier id ON id.event_type=events.event_type
+WHERE hierarchy.product_category IS NOT NULL
+GROUP BY hierarchy.product_category
+
+***-- 9. What are the top 3 products by purchases?
