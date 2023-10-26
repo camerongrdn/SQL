@@ -30,7 +30,16 @@ SELECT 100 * COUNT(DISTINCT e.visit_id) / (SELECT COUNT(DISTINCT visit_id) FROM 
 FROM clique_bait.events e
 WHERE event_type=3;
 
-***--- 6. What is the percentage of visits which view the checkout page but do not have a purchase event?
+--- 6. What is the percentage of visits which view the checkout page but do not have a purchase event?
+
+WITH CTE AS (
+SELECT
+    SUM(CASE WHEN event_type=1 AND page_id=12 THEN 1 ELSE 0 END) AS checkout,
+    SUM(CASE WHEN event_type=3 THEN 1 ELSE 0 END) AS purchase
+FROM events
+)
+SELECT ROUND(100* CAST(purchase AS FLOAT)/CAST(checkout AS FLOAT), 2) AS checkout_without_purchase_percentage
+FROM CTE;
 
 --- 7. What are the top 3 pages by number of views?
 
