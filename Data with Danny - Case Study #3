@@ -19,9 +19,8 @@ WHERE sub.start_date>='2021-01-01'
 GROUP BY p.plan_name
 ORDER BY sub.plan_id;
 
-***-- 4. What is the customer count and percentage of customers who have churned rounded to 1 decimal place?
-DIVISION RETURNS 0--INCORRECT ANSWER, COME BACK AND FIX
-SELECT total_customers, (customer_churn/total_customers) AS customer_churn_percentage
+-- 4. What is the customer count and percentage of customers who have churned rounded to 1 decimal place?
+SELECT customer_churn, CAST(customer_churn AS FLOAT)/CAST(total_customers AS FLOAT) * 100 AS customer_churn_percentage
 FROM (
 SELECT COUNT(DISTINCT customer_id) AS total_customers,
     SUM(CASE WHEN plan_id=4 THEN 1
@@ -29,19 +28,27 @@ SELECT COUNT(DISTINCT customer_id) AS total_customers,
 FROM subscriptions
 ) AS churn_data
 
-***-- 5. How many customers have churned straight after their initial free trial - what percentage is this rounded to the nearest whole number?
-HAVE NOT CALCULATED PERCENTAGE
-SELECT 
-    SUM(CASE WHEN plan_name = 'churn' AND plan_rank = 2 THEN 1
-    ELSE 0
-    END) AS churn_post_trial
-FROM
+OR
+
+SELECT COUNT(DISTINCT customer_id) AS customer_churn, 100* CAST(COUNT(DISTINCT customer_id) AS FLOAT)/
+CAST((SELECT COUNT(DISTINCT customer_id) FROM subscriptions) AS FLOAT) AS churn_percentage
+FROM subscriptions
+WHERE plan_id=4
+
+-- 5. How many customers have churned straight after their initial free trial - what percentage is this rounded to the nearest whole number?
+WITH CTE AS
 (
 SELECT sub.customer_id, sub.plan_id, p.plan_name,
 RANK() OVER (PARTITION BY customer_id ORDER BY sub.start_date) AS plan_rank
 FROM subscriptions sub
 JOIN plans p on p.plan_id=sub.plan_id
-) AS plan_data
+GROUP BY sub.customer_id, sub.plan_id
+)
+SELECT SUM(CASE WHEN plan_name = 'churn' AND plan_rank = 2 THEN 1 ELSE 0 END) AS customer_churn_count,
+    100*
+    CAST(SUM(CASE WHEN plan_name = 'churn' AND plan_rank = 2 THEN 1 ELSE 0 END) AS FLOAT) /
+    CAST((SELECT COUNT(DISTINCT customer_id) FROM subscriptions) AS FLOAT) AS customer_churn_percentage
+FROM CTE
 
 -- What is the number and percentage of customer plans after their initial free trial?
 -- What is the customer count and percentage breakdown of all 5 plan_name values at 2020-12-31?
