@@ -152,7 +152,66 @@ JOIN products_purchased pp ON pp.product_category=pva.product_category
 Use your 2 new output tables - answer the following questions:
 
 Which product had the most views, cart adds and purchases?
+
+VIEWS:
+SELECT product_id, page_name, product_category, views, add_to_cart, purchased
+FROM product_info
+ORDER BY views DESC
+LIMIT 1;
+
+CART ADDS:
+SELECT product_id, page_name, product_category, views, add_to_cart, purchased
+FROM product_info
+ORDER BY add_to_cart DESC
+LIMIT 1;
+
+PURCHASES:
+SELECT product_id, page_name, product_category, views, add_to_cart, purchased
+FROM product_info
+ORDER BY purchased DESC
+LIMIT 1;
+
 Which product was most likely to be abandoned?
+
+SELECT product_id, page_name, product_category, abandoned
+FROM product_info
+ORDER BY abandoned DESC
+LIMIT 1;
+
 Which product had the highest view to purchase percentage?
+
+SELECT product_id, page_name, product_category, view_to_purchase_percentage
+FROM
+(
+SELECT product_id, page_name, product_category, views, purchased,
+    ROUND(100 * CAST(purchased AS FLOAT)/CAST(views AS FLOAT),2) AS view_to_purchase_percentage
+FROM product_info
+) AS purchase_data
+ORDER BY view_to_purchase_percentage DESC
+LIMIT 1
+
+OR
+
+SELECT product_id, page_name, product_category, views, purchased,
+    ROUND(100 * CAST(purchased AS FLOAT)/CAST(views AS FLOAT),2) AS view_to_purchase_percentage
+FROM product_info
+ORDER BY (100 * CAST(purchased AS FLOAT)/CAST(views AS FLOAT)) DESC
+LIMIT 1
+
 What is the average conversion rate from view to cart add?
+
+SELECT ROUND(AVG(view_to_cart_add_percentage),2) AS avg_view_to_cart_rate FROM
+(
+SELECT product_id, page_name, product_category, add_to_cart, views,
+    ROUND(100 * CAST(add_to_cart AS FLOAT)/CAST(views AS FLOAT),2) AS view_to_cart_add_percentage
+FROM product_info
+) AS conversion_data;
+
 What is the average conversion rate from cart add to purchase?
+
+SELECT ROUND(AVG(cart_to_purchase_percentage),2) AS avg_cart_to_purchase_rate FROM
+(
+SELECT product_id, page_name, product_category, add_to_cart, purchased,
+    ROUND(100 * CAST(purchased AS FLOAT)/CAST(add_to_cart AS FLOAT),2) AS cart_to_purchase_percentage
+FROM product_info
+) AS conversion_data;
