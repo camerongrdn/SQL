@@ -111,7 +111,7 @@ FROM sales
 JOIN product_details pd ON pd.product_id=sales.prod_id
 GROUP BY pd.segment_name, pd.product_name
 ) AS segment_sales_data
-WHERE rownum=1
+WHERE rownum=1;
 
 -- 4. What is the total quantity, revenue and discount for each category?
 
@@ -132,7 +132,7 @@ FROM sales
 JOIN product_details pd ON pd.product_id=sales.prod_id
 GROUP BY pd.category_name, pd.product_name
 ) AS category_sales_data
-WHERE rownum=1
+WHERE rownum=1;
 
 -- 6. What is the percentage split of revenue by product for each segment?
 
@@ -146,7 +146,7 @@ GROUP BY pd.segment_name, pd.product_name
 )
 SELECT segment_name, product_name,
     ROUND(CAST(product_revenue AS FLOAT)/CAST(segment_revenue AS FLOAT) * 100, 2) AS revenue_percentage
-FROM CTE
+FROM CTE;
 
 -- 7. What is the percentage split of revenue by segment for each category?
 
@@ -160,7 +160,7 @@ GROUP BY pd.category_name, pd.segment_name
 )
 SELECT category_name, segment_name,
     ROUND(CAST(segment_revenue AS FLOAT)/CAST(category_revenue AS FLOAT) * 100, 2) AS revenue_percentage
-FROM CTE
+FROM CTE;
 
 -- 8. What is the percentage split of total revenue by category?
 
@@ -172,7 +172,7 @@ SELECT pd.category_name, SUM(sales.qty * sales.price) AS revenue
 FROM sales
 JOIN product_details pd ON pd.product_id=sales.prod_id
 GROUP BY pd.category_name
-)
+) AS category_revenue;
 
 -- 9. What is the total transaction “penetration” for each product?
     (hint: penetration = number of transactions where at least 1 quantity of a product was purchased
@@ -188,6 +188,23 @@ GROUP BY pd.product_name
 SELECT product_name,
     ROUND(CAST(transaction_count AS FLOAT)/CAST((SELECT COUNT(DISTINCT txn_id) FROM sales) AS FLOAT) * 100, 2) AS penetration_percentage
 FROM CTE
-ORDER BY CAST(transaction_count AS FLOAT)/CAST((SELECT COUNT(DISTINCT txn_id) FROM sales) AS FLOAT) DESC
+ORDER BY CAST(transaction_count AS FLOAT)/CAST((SELECT COUNT(DISTINCT txn_id) FROM sales) AS FLOAT) DESC;
 
-***-- 10. What is the most common combination of at least 1 quantity of any 3 products in a 1 single transaction?
+-- 10. What is the most common combination of at least 1 quantity of any 3 products in a 1 single transaction?
+
+WITH products AS
+(
+SELECT s.txn_id, pd.product_name
+FROM sales s
+JOIN product_details pd ON s.prod_id=pd.product_id
+)
+SELECT p.product_name AS product1, p2.product_name AS product2, p3.product_name AS product3,
+COUNT(*) AS times_bought_together
+FROM products p
+JOIN products p2 ON p.txn_id=p2.txn_id
+    AND p.product_name != p2.product_name
+JOIN products p3 ON p2.txn_id=p3.txn_id
+    AND p.product_name != p3.product_name
+    AND p2.product_name != p3.product_name
+GROUP BY p.product_name, p2.product_name, p3.product_name
+ORDER BY COUNT(*) DESC;
