@@ -1,1 +1,178 @@
+-- A. High Level Sales Analysis
+-- 1. What was the total quantity sold for all products?
+GROUPED BY PRODUCT:
+SELECT pd.product_name, SUM(sales.qty) AS total_sales
+FROM sales
+JOIN product_details pd ON pd.product_id=sales.prod_id
+GROUP BY pd.product_name;
 
+TOTAL:
+SELECT SUM(sales.qty) AS total_sales
+FROM sales;
+
+-- 2. What is the total generated revenue for all products before discounts?
+GROUPED BY PRODUCT:
+SELECT pd.product_name, SUM(sales.price*sales.qty) AS total_revenue
+FROM sales
+JOIN product_details pd ON pd.product_id=sales.prod_id
+GROUP BY pd.product_name;
+
+TOTAL:
+SELECT SUM(sales.price*sales.qty) AS total_revenue
+FROM sales;
+
+--3. What was the total discount amount for all products?
+GROUPED BY PRODUCT:
+SELECT pd.product_name, ROUND(SUM(sales.qty * sales.price * sales.discount * .01),2) AS total_discount_amount
+FROM sales
+JOIN product_details pd ON pd.product_id=sales.prod_id
+GROUP BY pd.product_name
+
+TOTAL:
+SELECT ROUND(SUM(qty * price * discount * .01),2) AS total_discount_amount
+FROM sales;
+
+-- B. Transaction Analysis
+-- 1. How many unique transactions were there?
+
+SELECT COUNT(DISTINCT txn_id) AS unique_transactions
+FROM sales;
+
+-- 2. What is the average unique products purchased in each transaction?
+
+SELECT ROUND(AVG(unique_prod_count),0) AS avg_unique_prod_count
+FROM
+(
+SELECT txn_id, COUNT(DISTINCT prod_id) AS unique_prod_count
+FROM sales
+GROUP BY txn_id
+) AS txn_data;
+
+***-- 3. What are the 25th, 50th and 75th percentile values for the revenue per transaction?
+-- 4. What is the average discount value per transaction?
+
+SELECT ROUND(AVG(discount_amt),2) AS avg_discount_amt
+FROM
+(
+SELECT txn_id, SUM(qty * price * discount * .01) AS discount_amt
+FROM sales
+GROUP BY txn_id
+) AS txn_discount_data;
+
+-- 5. What is the percentage split of all transactions for members vs non-members?
+
+SELECT ROUND(CAST(member_count AS FLOAT)/CAST(total_transactions AS FLOAT) * 100, 2) AS member_percentage,
+    ROUND(CAST(nonmember_count AS FLOAT)/CAST(total_transactions AS FLOAT) * 100, 2) AS nonmember_percentage
+FROM
+(
+SELECT COUNT(txn_id) AS total_transactions,
+    SUM(CASE WHEN member='t' THEN 1 ELSE 0 END) AS member_count,
+    SUM(CASE WHEN member='f' THEN 1 ELSE 0 END) AS nonmember_count
+FROM sales
+) AS member_data;
+
+-- 6. What is the average revenue for member transactions and non-member transactions?
+
+SELECT member, ROUND(AVG(revenue), 2) AS avg_revenue
+FROM
+(
+SELECT txn_id, member, SUM(qty * price) AS revenue
+FROM sales
+GROUP BY txn_id, member
+) AS sales_data
+GROUP BY member;
+
+-- C. Product Analysis
+-- 1. What are the top 3 products by total revenue before discount?
+
+SELECT pd.product_name, SUM(sales.qty * sales.price) AS revenue
+FROM sales
+JOIN product_details pd ON pd.product_id=sales.prod_id
+GROUP BY pd.product_name
+ORDER BY SUM(sales.qty * sales.price) DESC
+LIMIT 3;
+
+-- 2. What is the total quantity, revenue and discount for each segment?
+
+SELECT pd.segment_name, SUM(sales.qty) AS total_quantity, SUM(sales.qty * sales.price) AS revenue,
+ROUND(SUM(sales.qty * sales.price * sales.discount * .01), 2) AS discount
+FROM sales
+JOIN product_details pd ON pd.product_id=sales.prod_id
+GROUP BY pd.segment_name;
+
+-- 3. What is the top selling product for each segment?
+
+SELECT segment_name, product_name, total_sales
+FROM
+(
+SELECT pd.segment_name, pd.product_name, SUM(sales.qty) AS total_sales,
+ROW_NUMBER() OVER(PARTITION BY pd.segment_name ORDER BY pd.segment_name, SUM(sales.qty) DESC) AS rownum
+FROM sales
+JOIN product_details pd ON pd.product_id=sales.prod_id
+GROUP BY pd.segment_name, pd.product_name
+) AS segment_sales_data
+WHERE rownum=1
+
+-- 4. What is the total quantity, revenue and discount for each category?
+
+SELECT pd.category_name, SUM(sales.qty) AS total_quantity, SUM(sales.qty * sales.price) AS revenue,
+ROUND(SUM(sales.qty * sales.price * sales.discount * .01), 2) AS discount
+FROM sales
+JOIN product_details pd ON pd.product_id=sales.prod_id
+GROUP BY pd.category_name;
+
+-- 5. What is the top selling product for each category?
+
+SELECT category_name, product_name, total_sales
+FROM
+(
+SELECT pd.category_name, pd.product_name, SUM(sales.qty) AS total_sales,
+ROW_NUMBER() OVER(PARTITION BY pd.category_name ORDER BY pd.category_name, SUM(sales.qty) DESC) AS rownum
+FROM sales
+JOIN product_details pd ON pd.product_id=sales.prod_id
+GROUP BY pd.category_name, pd.product_name
+) AS category_sales_data
+WHERE rownum=1
+
+-- 6. What is the percentage split of revenue by product for each segment?
+
+WITH CTE AS
+(
+SELECT pd.segment_name, pd.product_name, SUM(sales.qty * sales.price) AS product_revenue,
+    SUM(SUM(sales.qty * sales.price)) OVER (PARTITION BY pd.segment_name) AS segment_revenue
+FROM sales
+JOIN product_details pd ON pd.product_id=sales.prod_id
+GROUP BY pd.segment_name, pd.product_name
+)
+SELECT segment_name, product_name,
+    ROUND(CAST(product_revenue AS FLOAT)/CAST(segment_revenue AS FLOAT) * 100, 2) AS revenue_percentage
+FROM CTE
+
+-- 7. What is the percentage split of revenue by segment for each category?
+
+WITH CTE AS
+(
+SELECT pd.category_name, pd.segment_name, SUM(sales.qty * sales.price) AS segment_revenue,
+    SUM(SUM(sales.qty * sales.price)) OVER (PARTITION BY pd.category_name) AS category_revenue
+FROM sales
+JOIN product_details pd ON pd.product_id=sales.prod_id
+GROUP BY pd.category_name, pd.segment_name
+)
+SELECT category_name, segment_name,
+    ROUND(CAST(segment_revenue AS FLOAT)/CAST(category_revenue AS FLOAT) * 100, 2) AS revenue_percentage
+FROM CTE
+
+-- 8. What is the percentage split of total revenue by category?
+
+SELECT category_name,
+    ROUND(CAST(revenue AS FLOAT)/CAST((SELECT SUM(sales.qty * sales.price) FROM sales) AS FLOAT) * 100, 2) AS revenue_percentage
+FROM
+(
+SELECT pd.category_name, SUM(sales.qty * sales.price) AS revenue
+FROM sales
+JOIN product_details pd ON pd.product_id=sales.prod_id
+GROUP BY pd.category_name
+)
+
+***-- 9. What is the total transaction “penetration” for each product? (hint: penetration = number of transactions where at least 1 quantity of a product was purchased divided by total number of transactions)
+***-- 10. What is the most common combination of at least 1 quantity of any 3 products in a 1 single transaction?
