@@ -73,12 +73,40 @@ WHERE plan_id=0
 GROUP BY next_plan_id;
 
 -- 7. What is the customer count and percentage breakdown of all 5 plan_name values at 2020-12-31?
+
+WITH plan_data AS
+(
+SELECT s.customer_id, s.plan_id, p.plan_name,
+    LEAD(s.start_date) OVER(PARTITION BY s.customer_id ORDER BY s.start_date) AS next_date
+FROM subscriptions s
+JOIN plans p ON s.plan_id=p.plan_id
+WHERE s.start_date <= '2020-12-31'
+)
+SELECT plan_id, plan_name, COUNT(DISTINCT customer_id) AS customer_count,
+    CAST(COUNT(DISTINCT customer_id) AS FLOAT)/CAST((SELECT COUNT(DISTINCT customer_id) FROM subscriptions) AS FLOAT) *100 AS plan_percentage
+FROM plan_data
+WHERE next_date IS NULL
+GROUP BY plan_id
+
 -- 8. How many customers have upgraded to an annual plan in 2020?
+
+SELECT COUNT(DISTINCT customer_id) AS customer_count
+FROM subscriptions
+WHERE plan_id=3
+AND start_date BETWEEN '2020-01-01' AND '2020-12-31';
+
 -- 9. How many customers downgraded from a pro monthly to a basic monthly plan in 2020?
 
--- D. Outside The Box Questions
--- 1. How would you calculate the rate of growth for Foodie-Fi?
--- 2. What key metrics would you recommend Foodie-Fi management to track over time to assess performance of their overall business?
--- 3. What are some key customer journeys or experiences that you would analyse further to improve customer retention?
--- 4. If the Foodie-Fi team were to create an exit survey shown to customers who wish to cancel their subscription, what questions would you include in the survey?
--- 5. What business levers could the Foodie-Fi team use to reduce the customer churn rate? How would you validate the effectiveness of your ideas?
+WITH plan_data AS
+(
+SELECT s.customer_id, s.plan_id, p.plan_name, s.start_date,
+    LAG(s.plan_id) OVER(PARTITION BY s.customer_id ORDER BY s.plan_id) AS former_plan_id,
+    LAG(p.plan_name) OVER(PARTITION BY s.customer_id ORDER BY s.plan_id) AS former_plan_name
+FROM subscriptions s
+JOIN plans p ON s.plan_id=p.plan_id
+)
+SELECT COUNT(customer_id) AS customer_conversion
+FROM plan_data
+WHERE plan_id=1
+AND former_plan_id=3
+AND start_date LIKE '2020%'
