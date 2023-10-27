@@ -10,7 +10,14 @@ WHERE customer_id IN (1,2,11,13,15,16,18,19);
 SELECT COUNT(DISTINCT customer_id) FROM subscriptions;
 ANSWER: 1000
 
-***-- 2. 
+-- 2. What is the monthly distribution of trial plan start_date values for our dataset - use the start of the month as the group by value
+
+SELECT strftime('%m', s.start_date) AS month, p.plan_name, COUNT(s.plan_id) AS number_of_customers
+FROM subscriptions s
+JOIN plans p ON s.plan_id=p.plan_id
+WHERE p.plan_name = 'trial'
+GROUP BY strftime('%m', s.start_date)
+
 -- 3. What plan start_date values occur after the year 2020 for our dataset? Show the breakdown by count of events for each plan_name.
 SELECT sub.plan_id, p.plan_name, COUNT(p.plan_name) AS plan_sales
 FROM subscriptions sub
@@ -50,10 +57,24 @@ SELECT SUM(CASE WHEN plan_name = 'churn' AND plan_rank = 2 THEN 1 ELSE 0 END) AS
     CAST((SELECT COUNT(DISTINCT customer_id) FROM subscriptions) AS FLOAT) AS customer_churn_percentage
 FROM CTE
 
--- What is the number and percentage of customer plans after their initial free trial?
--- What is the customer count and percentage breakdown of all 5 plan_name values at 2020-12-31?
--- How many customers have upgraded to an annual plan in 2020?
--- How many customers downgraded from a pro monthly to a basic monthly plan in 2020?
+-- 6. What is the number and percentage of customer plans after their initial free trial?
+
+WITH plan_conversion_data AS
+(
+SELECT s.customer_id, s.plan_id, p.plan_name, LEAD(s.plan_id) OVER(PARTITION BY s.customer_id ORDER BY s.plan_id) AS next_plan_id,
+LEAD(p.plan_name) OVER(PARTITION BY s.customer_id ORDER BY s.plan_id) AS next_plan_name
+FROM subscriptions s
+JOIN plans p ON s.plan_id=p.plan_id
+)
+SELECT next_plan_id AS plan_id, next_plan_name AS plan_name, COUNT(customer_id) AS converted_customers,
+    CAST(COUNT(customer_id) AS FLOAT)/CAST((SELECT COUNT(DISTINCT customer_id) FROM subscriptions) AS FLOAT) * 100 AS conversion_percentage
+FROM plan_conversion_data
+WHERE plan_id=0
+GROUP BY next_plan_id;
+
+-- 7. What is the customer count and percentage breakdown of all 5 plan_name values at 2020-12-31?
+-- 8. How many customers have upgraded to an annual plan in 2020?
+-- 9. How many customers downgraded from a pro monthly to a basic monthly plan in 2020?
 
 -- D. Outside The Box Questions
 -- 1. How would you calculate the rate of growth for Foodie-Fi?
