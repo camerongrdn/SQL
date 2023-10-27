@@ -2,8 +2,9 @@
 -- 1. Update the fresh_segments.interest_metrics table by modifying the month_year column to be a date data type
   with the start of the month
 
+DROP TABLE IF EXISTS interest_metrics_cleaned
 CREATE TABLE interest_metrics_cleaned AS
-SELECT interest_id, composition, index_value, ranking, percentile_ranking,
+SELECT month_year, interest_id, composition, index_value, ranking, percentile_ranking,
 year ||'-'|| month ||'-'|| day AS date
 FROM
 (
@@ -14,8 +15,17 @@ SELECT *, '01' ||'-'|| month_year AS new_date
 FROM interest_metrics
 ) AS data
 ) AS data2;
+------------
+SELECT *,
+    CASE WHEN month_year IS NOT NULL THEN 1
+    ELSE 0
+    END AS new_date
+FROM interest_metrics;
+--
+substr(month_date, 4) ||'-'|| substr(month_date, 1, 2) ||'-01'||
 
-What is count of records in the fresh_segments.interest_metrics for each month_year value sorted in chronological order (earliest to latest) with the null values appearing first?
+-- 2. What is count of records in the fresh_segments.interest_metrics for each month_year value sorted in chronological order
+  (earliest to latest) with the null values appearing first?
 What do you think we should do with these null values in the fresh_segments.interest_metrics
 How many interest_id values exist in the fresh_segments.interest_metrics table but not in the fresh_segments.interest_map table? What about the other way around?
 Summarise the id values in the fresh_segments.interest_map by its total record count in this table
