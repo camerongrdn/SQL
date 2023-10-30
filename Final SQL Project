@@ -58,10 +58,13 @@ GROUP BY `Customer Name`
 ORDER BY `Total Purchase Amount` DESC
 LIMIT 5;
 
--- 7. What is the most recent music purchase and by who? (customer name, track name, album name, artist name, purchase date, purchase amount, limit 1)
+-- 7. What is the most recent music purchase and by who?
 
-SELECT cust.CustomerId, cust.FirstName ||' '|| LastName AS 'Customer Full Name', tr.Name AS 'Track Name', al.Title AS 'Album Name',
-ar.Name AS 'Artist Name', inv.InvoiceDate, inv.Total AS 'Purchase Total'
+SELECT CustomerId, CustomerName, Track, Album, Artist, InvoiceDate, PurchaseTotal
+FROM
+(
+SELECT cust.CustomerId, cust.FirstName ||' '|| LastName AS CustomerName, tr.Name AS Track, al.Title AS Album,
+ar.Name AS Artist, inv.InvoiceDate, inv.Total AS PurchaseTotal, RANK() OVER(ORDER BY inv.InvoiceDate DESC) AS invoice_rank
 FROM chinook.customers cust
 JOIN chinook.invoices inv ON inv.CustomerId=cust.CustomerId
 JOIN chinook.invoice_items invit ON invit.InvoiceId=inv.InvoiceId
@@ -70,7 +73,9 @@ JOIN chinook.albums al ON al.AlbumId=tr.AlbumId
 JOIN chinook.artists ar ON ar.ArtistId=al.ArtistId
 JOIN chinook.media_types mt ON mt.MediaTypeId=tr.MediaTypeId
 WHERE mt.MediaTypeId IN (1,2,4,5)
-ORDER BY inv.InvoiceDate DESC;
+ORDER BY inv.InvoiceDate DESC
+) AS invoice_data
+WHERE invoice_rank=1;
 
 -- 8. What are the most popular/purchased programs?
 
