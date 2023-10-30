@@ -28,3 +28,17 @@ SELECT AVG(price) "avg tablet price" FROM Apple_Store_items WHERE type="tablet";
 
 -- 3. What is the average price of an Apple Store product by its age (years since release)?
 SELECT age,ROUND(AVG(price)) "avg price" FROM Apple_Store_items GROUP BY age;
+
+-- 4. How many items are in each age group (years since release)? Order by newest to oldest.
+SELECT age, COUNT(id) as product_count
+FROM Apple_Store_Items
+GROUP BY age;
+
+-- 5. What is the most expensive product in each age group?
+SELECT age, item, price FROM
+(
+SELECT age, item, price, ROW_NUMBER() OVER(PARTITION BY age ORDER BY price DESC) as rownum
+FROM Apple_Store_Items
+ORDER BY age
+)
+WHERE rownum=1;
