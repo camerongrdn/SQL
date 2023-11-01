@@ -1,5 +1,6 @@
 -- Source: https://8weeksqlchallenge.com/case-study-1/
 -- In this SQL, I'm querying a database (dannys_diner) with 3 datasets (sales, menu, members) to provide insights on Danny's customer loyalty program.
+-- Done in SQLite
 
 -- Data set:
 CREATE TABLE sales (
