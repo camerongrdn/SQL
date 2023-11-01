@@ -1,3 +1,7 @@
+-- Source: https://8weeksqlchallenge.com/case-study-7/
+-- In this SQL, I'm querying a database (balanced_tree) with 4 datasets (product_details, product_sales, product_hierarchy, product_prices) to provide insights on Danny's fashion retail store sales performance and a basic financial report.
+-- Done in SQLite
+
 -- A. High Level Sales Analysis
 -- 1. What was the total quantity sold for all products?
 GROUPED BY PRODUCT:
@@ -34,12 +38,10 @@ FROM sales;
 
 -- B. Transaction Analysis
 -- 1. How many unique transactions were there?
-
 SELECT COUNT(DISTINCT txn_id) AS unique_transactions
 FROM sales;
 
 -- 2. What is the average unique products purchased in each transaction?
-
 SELECT ROUND(AVG(unique_prod_count),0) AS avg_unique_prod_count
 FROM
 (
@@ -48,9 +50,7 @@ FROM sales
 GROUP BY txn_id
 ) AS txn_data;
 
-***-- 3. What are the 25th, 50th and 75th percentile values for the revenue per transaction?
 -- 4. What is the average discount value per transaction?
-
 SELECT ROUND(AVG(discount_amt),2) AS avg_discount_amt
 FROM
 (
@@ -60,7 +60,6 @@ GROUP BY txn_id
 ) AS txn_discount_data;
 
 -- 5. What is the percentage split of all transactions for members vs non-members?
-
 SELECT ROUND(CAST(member_count AS FLOAT)/CAST(total_transactions AS FLOAT) * 100, 2) AS member_percentage,
     ROUND(CAST(nonmember_count AS FLOAT)/CAST(total_transactions AS FLOAT) * 100, 2) AS nonmember_percentage
 FROM
@@ -72,7 +71,6 @@ FROM sales
 ) AS member_data;
 
 -- 6. What is the average revenue for member transactions and non-member transactions?
-
 SELECT member, ROUND(AVG(revenue), 2) AS avg_revenue
 FROM
 (
@@ -84,7 +82,6 @@ GROUP BY member;
 
 -- C. Product Analysis
 -- 1. What are the top 3 products by total revenue before discount?
-
 SELECT pd.product_name, SUM(sales.qty * sales.price) AS revenue
 FROM sales
 JOIN product_details pd ON pd.product_id=sales.prod_id
@@ -93,7 +90,6 @@ ORDER BY SUM(sales.qty * sales.price) DESC
 LIMIT 3;
 
 -- 2. What is the total quantity, revenue and discount for each segment?
-
 SELECT pd.segment_name, SUM(sales.qty) AS total_quantity, SUM(sales.qty * sales.price) AS revenue,
 ROUND(SUM(sales.qty * sales.price * sales.discount * .01), 2) AS discount
 FROM sales
@@ -101,7 +97,6 @@ JOIN product_details pd ON pd.product_id=sales.prod_id
 GROUP BY pd.segment_name;
 
 -- 3. What is the top selling product for each segment?
-
 SELECT segment_name, product_name, total_sales
 FROM
 (
@@ -114,7 +109,6 @@ GROUP BY pd.segment_name, pd.product_name
 WHERE rownum=1;
 
 -- 4. What is the total quantity, revenue and discount for each category?
-
 SELECT pd.category_name, SUM(sales.qty) AS total_quantity, SUM(sales.qty * sales.price) AS revenue,
 ROUND(SUM(sales.qty * sales.price * sales.discount * .01), 2) AS discount
 FROM sales
@@ -122,7 +116,6 @@ JOIN product_details pd ON pd.product_id=sales.prod_id
 GROUP BY pd.category_name;
 
 -- 5. What is the top selling product for each category?
-
 SELECT category_name, product_name, total_sales
 FROM
 (
@@ -135,8 +128,7 @@ GROUP BY pd.category_name, pd.product_name
 WHERE rownum=1;
 
 -- 6. What is the percentage split of revenue by product for each segment?
-
-WITH CTE AS
+WITH prodrev AS
 (
 SELECT pd.segment_name, pd.product_name, SUM(sales.qty * sales.price) AS product_revenue,
     SUM(SUM(sales.qty * sales.price)) OVER (PARTITION BY pd.segment_name) AS segment_revenue
@@ -146,11 +138,10 @@ GROUP BY pd.segment_name, pd.product_name
 )
 SELECT segment_name, product_name,
     ROUND(CAST(product_revenue AS FLOAT)/CAST(segment_revenue AS FLOAT) * 100, 2) AS revenue_percentage
-FROM CTE;
+FROM prodrev;
 
 -- 7. What is the percentage split of revenue by segment for each category?
-
-WITH CTE AS
+WITH catrev AS
 (
 SELECT pd.category_name, pd.segment_name, SUM(sales.qty * sales.price) AS segment_revenue,
     SUM(SUM(sales.qty * sales.price)) OVER (PARTITION BY pd.category_name) AS category_revenue
@@ -160,10 +151,9 @@ GROUP BY pd.category_name, pd.segment_name
 )
 SELECT category_name, segment_name,
     ROUND(CAST(segment_revenue AS FLOAT)/CAST(category_revenue AS FLOAT) * 100, 2) AS revenue_percentage
-FROM CTE;
+FROM catrev;
 
 -- 8. What is the percentage split of total revenue by category?
-
 SELECT category_name,
     ROUND(CAST(revenue AS FLOAT)/CAST((SELECT SUM(sales.qty * sales.price) FROM sales) AS FLOAT) * 100, 2) AS revenue_percentage
 FROM
@@ -177,8 +167,7 @@ GROUP BY pd.category_name
 -- 9. What is the total transaction “penetration” for each product?
     (hint: penetration = number of transactions where at least 1 quantity of a product was purchased
     divided by total number of transactions)
-
-WITH CTE AS 
+WITH productdata AS 
 (
 SELECT pd.product_name, COUNT(DISTINCT txn_id) AS transaction_count
 FROM sales
@@ -187,11 +176,10 @@ GROUP BY pd.product_name
 )
 SELECT product_name,
     ROUND(CAST(transaction_count AS FLOAT)/CAST((SELECT COUNT(DISTINCT txn_id) FROM sales) AS FLOAT) * 100, 2) AS penetration_percentage
-FROM CTE
+FROM productdata
 ORDER BY CAST(transaction_count AS FLOAT)/CAST((SELECT COUNT(DISTINCT txn_id) FROM sales) AS FLOAT) DESC;
 
 -- 10. What is the most common combination of at least 1 quantity of any 3 products in a 1 single transaction?
-
 WITH products AS
 (
 SELECT s.txn_id, pd.product_name
