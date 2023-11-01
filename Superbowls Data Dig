@@ -1,4 +1,4 @@
--- SUPERBOWLS DATA
+-- In this SQL, I'm querying a Superbowl dataset.
 
 CREATE TABLE superbowls(
   Date      TEXT PRIMARY KEY,
