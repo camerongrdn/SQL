@@ -1,49 +1,57 @@
+-- Source: https://8weeksqlchallenge.com/case-study-3/
+-- In this SQL, I'm querying a database (foodie_fi) with 2 datasets (plans, subscriptions) to provide insights on Danny's food-centered media streaming service.
+-- Done in SQLite
+
 -- A. Customer Journey
 -- 1. Based off the 8 sample customers provided in the sample from the subscriptions table, write a brief description about each customer’s onboarding journey.
-SELECT sub.*, p.plan_name, p.price from subscriptions sub
-JOIN plans p ON p.plan_id=sub.plan_id
+SELECT sub.*, p.plan_name, p.price
+FROM foodie_fi.subscriptions sub
+JOIN foodie_fi.plans p ON p.plan_id=sub.plan_id
 WHERE customer_id IN (1,2,11,13,15,16,18,19);
+
+Customer #1 initially signed up for a free trial, then converted to the basic monthly plan once their trial week was over.
+Customer #2 initially signed up for a free trial, then converted to the pro annual plan once their trial week was over.
+Customer #11 initially signed up for a free trial, then cancelled their subscription entirely once their trial week was over.
+Customer #13 initially signed up for a free trial, then converted to the basic monthly plan once their trial week was over.
+    About 3 months later, they converted to the pro monthly plan.
+Customer #15 initially signed up for a free trial, then converted to the pro monthly plan once their trial week was over.
+    About one month later, they cancelled their subscription entirely.
+Customer #16 initially signed up for a free trial, then converted to the basic monthly plan once their trial week was over.
+    About 4.5 months later, they converted to the pro annual plan.
+Customer #18 initially signed up for a free trial, then converted to the pro monthly plan once their trial week was over.
+Customer #19 initially signed up for a free trial, then converted to the pro monthly plan once their trial week was over.
+    About 2 months later, they converted to the pro annual plan.
 
 
 -- B. Data Analysis Questions
 -- 1. How many customers has Foodie-Fi ever had?
-SELECT COUNT(DISTINCT customer_id) FROM subscriptions;
-ANSWER: 1000
+SELECT COUNT(DISTINCT customer_id) as total_customers
+FROM foodie_fi.subscriptions;
 
 -- 2. What is the monthly distribution of trial plan start_date values for our dataset - use the start of the month as the group by value
-
 SELECT strftime('%m', s.start_date) AS month, p.plan_name, COUNT(s.plan_id) AS number_of_customers
-FROM subscriptions s
-JOIN plans p ON s.plan_id=p.plan_id
+FROM foodie_fi.subscriptions s
+JOIN foodie_fi.plans p ON s.plan_id=p.plan_id
 WHERE p.plan_name = 'trial'
 GROUP BY strftime('%m', s.start_date)
 
 -- 3. What plan start_date values occur after the year 2020 for our dataset? Show the breakdown by count of events for each plan_name.
 SELECT sub.plan_id, p.plan_name, COUNT(p.plan_name) AS plan_sales
-FROM subscriptions sub
-JOIN plans p ON p.plan_id=sub.plan_id
+FROM foodie_fi.subscriptions sub
+JOIN foodie_fi.plans p ON p.plan_id=sub.plan_id
 WHERE sub.start_date>='2021-01-01'
 GROUP BY p.plan_name
 ORDER BY sub.plan_id;
 
 -- 4. What is the customer count and percentage of customers who have churned rounded to 1 decimal place?
-SELECT customer_churn, CAST(customer_churn AS FLOAT)/CAST(total_customers AS FLOAT) * 100 AS customer_churn_percentage
-FROM (
-SELECT COUNT(DISTINCT customer_id) AS total_customers,
-    SUM(CASE WHEN plan_id=4 THEN 1
-    END) AS customer_churn
-FROM subscriptions
-) AS churn_data
-
-OR
-
-SELECT COUNT(DISTINCT customer_id) AS customer_churn, 100* CAST(COUNT(DISTINCT customer_id) AS FLOAT)/
-CAST((SELECT COUNT(DISTINCT customer_id) FROM subscriptions) AS FLOAT) AS churn_percentage
-FROM subscriptions
+SELECT COUNT(DISTINCT customer_id) AS customer_churn,
+    100* CAST(COUNT(DISTINCT customer_id) AS FLOAT)/
+    CAST((SELECT COUNT(DISTINCT customer_id) FROM foodie_fi.subscriptions) AS FLOAT) AS churn_percentage
+FROM foodie_fi.subscriptions
 WHERE plan_id=4
 
 -- 5. How many customers have churned straight after their initial free trial - what percentage is this rounded to the nearest whole number?
-WITH CTE AS
+WITH plan_data AS
 (
 SELECT sub.customer_id, sub.plan_id, p.plan_name,
 RANK() OVER (PARTITION BY customer_id ORDER BY sub.start_date) AS plan_rank
@@ -55,10 +63,9 @@ SELECT SUM(CASE WHEN plan_name = 'churn' AND plan_rank = 2 THEN 1 ELSE 0 END) AS
     100*
     CAST(SUM(CASE WHEN plan_name = 'churn' AND plan_rank = 2 THEN 1 ELSE 0 END) AS FLOAT) /
     CAST((SELECT COUNT(DISTINCT customer_id) FROM subscriptions) AS FLOAT) AS customer_churn_percentage
-FROM CTE
+FROM plan_data;
 
 -- 6. What is the number and percentage of customer plans after their initial free trial?
-
 WITH plan_conversion_data AS
 (
 SELECT s.customer_id, s.plan_id, p.plan_name, LEAD(s.plan_id) OVER(PARTITION BY s.customer_id ORDER BY s.plan_id) AS next_plan_id,
@@ -73,7 +80,6 @@ WHERE plan_id=0
 GROUP BY next_plan_id;
 
 -- 7. What is the customer count and percentage breakdown of all 5 plan_name values at 2020-12-31?
-
 WITH plan_data AS
 (
 SELECT s.customer_id, s.plan_id, p.plan_name,
@@ -86,17 +92,15 @@ SELECT plan_id, plan_name, COUNT(DISTINCT customer_id) AS customer_count,
     CAST(COUNT(DISTINCT customer_id) AS FLOAT)/CAST((SELECT COUNT(DISTINCT customer_id) FROM subscriptions) AS FLOAT) *100 AS plan_percentage
 FROM plan_data
 WHERE next_date IS NULL
-GROUP BY plan_id
+GROUP BY plan_id;
 
 -- 8. How many customers have upgraded to an annual plan in 2020?
-
 SELECT COUNT(DISTINCT customer_id) AS customer_count
-FROM subscriptions
+FROM foodie_fi.subscriptions
 WHERE plan_id=3
 AND start_date BETWEEN '2020-01-01' AND '2020-12-31';
 
 -- 9. How many customers downgraded from a pro monthly to a basic monthly plan in 2020?
-
 WITH plan_data AS
 (
 SELECT s.customer_id, s.plan_id, p.plan_name, s.start_date,
@@ -109,4 +113,4 @@ SELECT COUNT(customer_id) AS customer_conversion
 FROM plan_data
 WHERE plan_id=1
 AND former_plan_id=3
-AND start_date LIKE '2020%'
+AND start_date LIKE '2020%';
