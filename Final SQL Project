@@ -1,3 +1,5 @@
+-- In this SQL, I'm querying a dataset called chinook, which represents a digital media store and includes tables for artists, albums, media tracks, invoices, and customers.
+
 -- 1. How many times does each genre show up in playlist 1? (genre name, # of times, playlist number)
 
 SELECT pl.PlaylistId, g.Name, COUNT(g.Name) AS 'Total # of Genre Tracks'
