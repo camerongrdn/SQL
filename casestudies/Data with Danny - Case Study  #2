@@ -1,7 +1,11 @@
--- Cleaning table 2: Customer Orders
+-- Source: https://8weeksqlchallenge.com/case-study-2/
+-- In this SQL, I'm querying a database (pizza_runner) with 6 datasets (runner_orders, runners, customer_orders, pizza_names, pizza_recipes, pizza_toppings) to provide insights on Danny's pizza and delivery business.
+-- Done in SQLite
+
+-- Cleaning table: Customer Orders
 -- Created secondary table with cleaned data to preserve original table and data.
-DROP TABLE IF EXISTS customer_orders_cleaned;
-CREATE TABLE customer_orders_cleaned AS
+DROP TABLE IF EXISTS pizza_runner.customer_orders_cleaned;
+CREATE TABLE pizza_runner.customer_orders_cleaned AS
 SELECT order_id, customer_id, pizza_id,
     CASE WHEN exclusions = 'null' OR exclusions IS NULL THEN ''
     ELSE exclusions
@@ -10,14 +14,12 @@ SELECT order_id, customer_id, pizza_id,
     ELSE extras
     END AS extras,
 order_time
-FROM customer_orders;
+FROM pizza_runner.customer_orders;
 
-
-
--- Cleaning table 3: Runner Orders
+-- Cleaning table: Runner Orders
 -- Created secondary table with cleaned data to preserve original table and data.
-DROP TABLE IF EXISTS runner_orders_cleaned;
-CREATE TABLE runner_orders_cleaned AS
+DROP TABLE IF EXISTS pizza_runner.runner_orders_cleaned;
+CREATE TABLE pizza_runner.runner_orders_cleaned AS
 SELECT order_id, runner_id,
     CASE WHEN pickup_time = 'null' THEN ' '
     ELSE pickup_time
@@ -35,54 +37,47 @@ SELECT order_id, runner_id,
     CASE WHEN cancellation = 'null' OR cancellation IS NULL THEN ' '
     ELSE cancellation
     END AS cancellation
-FROM runner_orders;
+FROM pizza_runner.runner_orders;
 
 
 -- A. Pizza Metrics
 -- 1. How many pizzas were ordered?
-
-SELECT COUNT(*) FROM customer_orders;
+SELECT COUNT(*) FROM pizza_runner.customer_orders_cleaned;
 
 -- 2. How many unique customer orders were made?
-
-SELECT COUNT(DISTINCT order_id) FROM customer_orders_cleaned;
+SELECT COUNT(DISTINCT order_id) FROM pizza_runner.customer_orders_cleaned;
 
 -- 3. How many successful orders were delivered by each runner?
-
 SELECT runner_id, COUNT(order_id) AS successful_orders
-FROM runner_orders_cleaned
+FROM pizza_runner.runner_orders_cleaned
 WHERE cancellation = ''
 GROUP BY runner_id;
 
 -- 4. How many of each type of pizza was delivered?
-
 SELECT customer.pizza_id, pn.pizza_name, COUNT(customer.pizza_id) AS number_of_deliveries
-FROM runner_orders_cleaned runner
-JOIN customer_orders_cleaned customer ON customer.order_id=runner.order_id
-JOIN pizza_names pn ON pn.pizza_id=customer.pizza_id
+FROM pizza_runner.runner_orders_cleaned runner
+JOIN pizza_runner.customer_orders_cleaned customer ON customer.order_id=runner.order_id
+JOIN pizza_runner.pizza_names pn ON pn.pizza_id=customer.pizza_id
 WHERE runner.distance <> ''
 GROUP BY customer.pizza_id;
 
 -- 5. How many Vegetarian and Meatlovers were ordered by each customer?
-
 SELECT cust.customer_id, pn.pizza_name, COUNT(cust.pizza_id) AS number_of_orders
-FROM customer_orders_cleaned cust
-JOIN pizza_names pn ON pn.pizza_id=cust.pizza_id
+FROM pizza_runner.customer_orders_cleaned cust
+JOIN pizza_runner.pizza_names pn ON pn.pizza_id=cust.pizza_id
 GROUP BY cust.customer_id, pn.pizza_name;
 
 -- 6. What was the maximum number of pizzas delivered in a single order?
-
 SELECT order_id, MAX(number_of_pizzas) AS pizzas_ordered FROM
 (
     SELECT order_id, COUNT(pizza_id) AS number_of_pizzas
-    FROM customer_orders_cleaned
+    FROM pizza_runner.customer_orders_cleaned
     GROUP BY order_id
     ORDER BY number_of_pizzas DESC
 )
-AS order_count
+AS order_count;
 
 -- 7. For each customer, how many delivered pizzas had at least 1 change and how many had no changes?
-
 SELECT cust.customer_id,
     SUM(CASE WHEN exclusions <> '' OR extras <> '' THEN 1
     ELSE 0
@@ -90,9 +85,9 @@ SELECT cust.customer_id,
     SUM(CASE WHEN exclusions = '' AND extras = '' THEN 1
     ELSE 0
     END) AS no_changes
-FROM customer_orders_cleaned cust
-RIGHT JOIN runner_orders_cleaned runner ON cust.order_id=runner.order_id
-WHERE runner.cancellation = ''
+FROM pizza_runner.customer_orders_cleaned cust
+RIGHT JOIN pizza_runner.runner_orders_cleaned runner ON cust.order_id=runner.order_id
+WHERE runner.distance <> ''
 GROUP BY cust.customer_id;
 
 -- 8. How many pizzas were delivered that had both exclusions and extras?
@@ -101,14 +96,13 @@ SELECT
     SUM(CASE WHEN exclusions <> '' AND extras <> '' THEN 1
     ELSE 0
     END) AS exclusions_and_extras
-FROM customer_orders_cleaned cust
-RIGHT JOIN runner_orders_cleaned runner ON cust.order_id=runner.order_id
-WHERE runner.cancellation = '';
+FROM pizza_runner.customer_orders_cleaned cust
+RIGHT JOIN pizza_runner.runner_orders_cleaned runner ON cust.order_id=runner.order_id
+WHERE runner.distance <> '';
 
 
 -- B. Runner and Customer Experience
 -- 1. How many runners signed up for each 1 week period? (i.e. week starts 2021-01-01)
-
 SELECT registration_week, COUNT(runner_id) AS runner_sign_up_total FROM
 (
 SELECT runner_id, registration_date,
@@ -116,27 +110,25 @@ SELECT runner_id, registration_date,
     WHEN registration_date BETWEEN '2021-01-08' AND DATE('2021-01-08', '+6 days') THEN '2021-01-08'
     WHEN registration_date BETWEEN '2021-01-15' AND DATE('2021-01-15', '+6 days') THEN '2021-01-15'
     END AS registration_week
-FROM runners
+FROM pizza_runner.runners
 ) AS reg_data
 GROUP BY registration_week;
 
 -- 2. What was the average time in minutes it took for each runner to arrive at the Pizza Runner HQ to pickup the order?
-
 SELECT run.runner_id,
 ROUND(AVG((JULIANDAY(run.pickup_time)-JULIANDAY(cust.order_time))*1440),2) AS time_diff
-FROM customer_orders_cleaned cust
-JOIN runner_orders_cleaned run ON cust.order_id=run.order_id
+FROM pizza_runner.customer_orders_cleaned cust
+JOIN pizza_runner.runner_orders_cleaned run ON cust.order_id=run.order_id
 WHERE run.pickup_time <> ''
 GROUP BY runner_id;
 
 -- 3. Is there any relationship between the number of pizzas and how long the order takes to prepare?
-
 SELECT number_of_pizzas, ROUND(AVG(prep_time),2) AS avg_prep_time FROM
 (
 SELECT cust.order_id, COUNT(cust.pizza_id) as number_of_pizzas,
 AVG((JULIANDAY(run.pickup_time)-JULIANDAY(cust.order_time))*1440) AS prep_time
-FROM customer_orders_cleaned cust
-JOIN runner_orders_cleaned run ON cust.order_id=run.order_id
+FROM pizza_runner.customer_orders_cleaned cust
+JOIN pizza_runner.runner_orders_cleaned run ON cust.order_id=run.order_id
 WHERE run.pickup_time <> ''
 GROUP BY cust.order_id
 ) AS prep_data
@@ -144,15 +136,15 @@ GROUP BY number_of_pizzas;
 
 -- 4. What was the average distance travelled for each customer?
 SELECT cust.customer_id, ROUND(AVG(runner.distance),2) ||' '|| 'km' AS avg_distance
-FROM runner_orders_cleaned runner
-JOIN customer_orders_cleaned cust
+FROM pizza_runner.runner_orders_cleaned runner
+JOIN pizza_runner.customer_orders_cleaned cust
 ON cust.order_id=runner.order_id
 WHERE distance <> ''
 GROUP BY cust.customer_id;
 
 -- 5. What was the difference between the longest and shortest delivery times for all orders?
 SELECT (MAX(duration) - MIN(duration)) AS delivery_difference
-FROM runner_orders_cleaned
+FROM pizza_runner.runner_orders_cleaned
 WHERE duration <> '';
 
 -- D. Pricing and Ratings
@@ -161,7 +153,7 @@ WHERE duration <> '';
 SELECT SUM(CASE WHEN cust.pizza_id=1 THEN 12
         WHEN cust.pizza_id=2 THEN 10
         END) AS pizza_revenue
-FROM customer_orders_cleaned cust
-JOIN runner_orders_cleaned runner
+FROM pizza_runner.customer_orders_cleaned cust
+JOIN pizza_runner.runner_orders_cleaned runner
 ON runner.order_id=cust.order_id
-WHERE runner.cancellation = '';
+WHERE runner.distance <> '';
