@@ -1,3 +1,7 @@
+-- Source: https://8weeksqlchallenge.com/case-study-4/
+-- In this SQL, I'm querying a database (data_bank) with 3 datasets (regions, customer_nodes, customer_transactions) to provide insights on Danny's digital cryptocurrency bank.
+-- Done in SQLite
+
 A. Customer Nodes Exploration
 -- 1. How many unique nodes are there on the Data Bank system?
 SELECT COUNT(DISTINCT node_id) AS unique_nodes
@@ -23,7 +27,6 @@ FROM customer_transactions
 GROUP BY txn_type;
 
 -- 2. What is the average total historical deposit counts and amounts for all customers?
-
 SELECT AVG(total_count_deposits) AS avg_total_count_deposits, AVG(total_amount_deposits) AS avg_total_amount_deposits
 FROM (
 SELECT customer_id, count(txn_type) AS total_count_deposits, SUM(txn_amount) AS total_amount_deposits
@@ -33,7 +36,6 @@ GROUP BY customer_id
 ) AS deposit_data;
 
 -- 3. For each month - how many Data Bank customers make more than 1 deposit and either 1 purchase or 1 withdrawal in a single month?
-
 SELECT month, COUNT(customer_id) AS customer_count FROM
 (
 SELECT customer_id, strftime('%m', txn_date) AS month,
@@ -47,8 +49,7 @@ AND SUM(CASE WHEN txn_type = 'purchase' OR txn_type = 'withdrawal' THEN 1 ELSE 0
 GROUP BY month;
 
 -- 4. What is the closing balance for each customer at the end of the month?
-
-WITH CTE AS
+WITH transactions AS
 (
 SELECT strftime('%m', txn_date) AS txn_month, txn_date, customer_id,
     (CASE WHEN txn_type = 'deposit' THEN txn_amount ELSE 0 END) AS deposits,
@@ -62,9 +63,9 @@ ACCOUNT_BALANCES AS
 SELECT *,
 SUM(balance) OVER (PARTITION BY customer_id ORDER BY txn_date) AS running_balance,
 ROW_NUMBER() OVER (PARTITION BY customer_id, txn_month ORDER BY txn_date DESC) as rownum
-FROM CTE
+FROM transactions
 )
 SELECT customer_id, txn_month, running_balance AS closing_balance
 FROM ACCOUNT_BALANCES
 WHERE rownum=1
-ORDER BY txn_month
+ORDER BY txn_month;
