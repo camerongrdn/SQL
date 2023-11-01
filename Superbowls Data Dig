@@ -71,31 +71,23 @@ INSERT INTO superbowls(Date,SB,Winner,Winner_Pts,Loser,Loser_Pts,MVP,Stadium,Cit
 SELECT * from superbowls;
 
 -- Top 5 highest-scoring winners and game dates.
-SELECT winner, winner_pts, date FROM superbowls ORDER BY winner_pts desc LIMIT 5;
+SELECT winner, winner_pts, date FROM superbowls ORDER BY winner_pts DESC LIMIT 5;
 
 -- Total points scored and # of games won of all winners across all games, from most to least points scored.
 SELECT winner, SUM(winner_pts) AS total_points, COUNT(winner) as total_games_won
-FROM superbowls GROUP BY winner ORDER BY total_points desc;
+FROM superbowls GROUP BY winner ORDER BY total_points DESC;
 
 -- Average (and rounded) points per game and number of games won for winners who've won more than 2 Superbowls.
 SELECT winner, COUNT(winner) as total_wins, ROUND(AVG(winner_pts)) AS avg_pts
 FROM superbowls GROUP BY winner HAVING total_wins > 2 ORDER BY total_wins;
 
 -- Ranking winning teams by average number of points per winning game by the average number of winning points across all games.
-SELECT ROUND(AVG(winner_pts)) as avg_points_per_game from superbowls;
-SELECT winner, ROUND(AVG(winner_pts)) AS avg_points, CASE
-    WHEN ROUND(AVG(winner_pts)) > 30 THEN "above average"
-    WHEN ROUND(AVG(winner_pts)) < 30 THEN "below average"
-    ELSE "average"
-    END AS "ranking"
-FROM superbowls GROUP BY winner ORDER BY avg_points desc;
-**OR with subquery**
 SELECT winner, ROUND(AVG(winner_pts)) AS avg_points, CASE
     WHEN ROUND(AVG(winner_pts)) > (SELECT ROUND(AVG(winner_pts)) from superbowls) THEN "above average"
     WHEN ROUND(AVG(winner_pts)) < (SELECT ROUND(AVG(winner_pts)) from superbowls) THEN "below average"
     ELSE "average"
     END AS "ranking"
-FROM superbowls GROUP BY winner ORDER BY avg_points desc;
+FROM superbowls GROUP BY winner ORDER BY avg_points DESC;
 
 -- Sorting cities from most hosted Superbowl games to least.
-SELECT city, COUNT(city) AS total_games FROM superbowls GROUP BY city ORDER BY total_games desc;
+SELECT city, COUNT(city) AS total_games FROM superbowls GROUP BY city ORDER BY total_games DESC;
