@@ -91,7 +91,6 @@ WHERE runner.distance <> ''
 GROUP BY cust.customer_id;
 
 -- 8. How many pizzas were delivered that had both exclusions and extras?
-
 SELECT
     SUM(CASE WHEN exclusions <> '' AND extras <> '' THEN 1
     ELSE 0
