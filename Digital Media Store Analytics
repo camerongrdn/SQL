@@ -2,7 +2,6 @@
 -- Done in SQLite
 
 -- 1. How many times does each genre show up in playlist 1? (genre name, # of times, playlist number)
-
 SELECT pl.PlaylistId, g.Name, COUNT(g.Name) AS 'Total # of Genre Tracks'
 FROM chinook.genres g
 JOIN chinook.tracks tr ON tr.GenreId=g.GenreId
@@ -12,7 +11,6 @@ WHERE pl.PlaylistId=1
 GROUP BY g.Name;
 
 -- 2. What are all the artists that show up in each playlist? (artist name, playlist number)
-
 SELECT DISTINCT ar.Name AS ArtistName, pl.PlaylistId
 FROM chinook.artists ar
 JOIN chinook.albums al ON al.ArtistId=ar.ArtistId
@@ -22,7 +20,6 @@ JOIN chinook.playlists pl ON pl.PlaylistId=pltr.PlaylistId
 ORDER BY pl.PlaylistId;
 
 -- 3. Which artist has the most tracks in the Heavy Metal Classic playlist? (artist name, # of tracks, playlist number)
-
 SELECT ar.Name AS ArtistName, COUNT(pltr.TrackId) AS '# of Tracks', pl.Name AS PlaylistName
 FROM chinook.artists ar
 JOIN chinook.albums al ON al.ArtistId=ar.ArtistId
@@ -33,7 +30,6 @@ WHERE pl.PlaylistId=17
 GROUP BY ArtistName;
 
 -- 4. What tracks are in the 90s Music playlist? (track name, artist name, playlist name)
-
 SELECT tr.Name AS TrackName, ar.Name AS ArtistName, pl.Name AS PlaylistName
 FROM chinook.artists ar
 JOIN chinook.albums al ON al.ArtistId=ar.ArtistId
@@ -43,7 +39,6 @@ JOIN chinook.playlists pl ON pl.PlaylistId=pltr.PlaylistId
 WHERE pl.PlaylistId=5;
 
 -- 5. List the albums in order of longest track list. NOTE: Aliases are done in backticks to allow ordering by an alias.
-
 SELECT al.Title AS `Album Title`, ar.Name AS `Artist Name`, COUNT(tr.Name) AS `Number of Tracks`
 FROM chinook.albums al
 JOIN chinook.tracks tr ON tr.AlbumId=al.AlbumId
@@ -53,7 +48,6 @@ GROUP BY al.Title
 ORDER BY `Number of Tracks` DESC;
 
 -- 6. Who are the top 5 customers who made purchases?
-
 SELECT cust.CustomerId, cust.FirstName ||' '|| cust.LastName AS `Customer Name`, SUM(inv.Total) AS `Total Purchase Amount`
 FROM chinook.customers cust
 JOIN chinook.invoices inv ON inv.CustomerId=cust.CustomerId
@@ -62,7 +56,6 @@ ORDER BY `Total Purchase Amount` DESC
 LIMIT 5;
 
 -- 7. What is the most recent music purchase and by who?
-
 SELECT CustomerId, CustomerName, Track, Album, Artist, InvoiceDate, PurchaseTotal
 FROM
 (
@@ -81,7 +74,6 @@ ORDER BY inv.InvoiceDate DESC
 WHERE invoice_rank=1;
 
 -- 8. What are the most popular/purchased programs?
-
 SELECT al.Title AS `Show, Season`, COUNT(invit.TrackId) AS `Number of Purchases`
 FROM chinook.tracks tr
 JOIN chinook.albums al ON al.AlbumId=tr.AlbumId
@@ -91,26 +83,22 @@ GROUP BY `Show, Season`
 ORDER BY `Number of Purchases` DESC;
 
 -- 9. Show customers who are not in Germany.
-
 SELECT CustomerId, FirstName ||' '|| LastName, Country
 FROM chinook.customers
 WHERE Country !='Germany';
 
 -- 10. Provide a query that shows the invoices associated with each sales agent.
-
 SELECT emp.EmployeeId, emp.FirstName ||' '|| emp.LastName, inv.InvoiceId
 FROM chinook.employees emp
 JOIN chinook.customers cust ON cust.SupportRepId=emp.EmployeeId
 JOIN chinook.invoices inv ON inv.CustomerId=cust.CustomerId;
 
 -- 11. What are the total sales for 2012?
-
 SELECT SUM(inv.Total) AS 'Total Sales'
 FROM chinook.invoices inv
 WHERE inv.InvoiceDate LIKE '2012%';
 
 -- 12. Show supervisors and their direct reports.
-
 SELECT sup.FirstName ||' '|| sup.LastName AS SupervisorName, emp.FirstName ||' '|| emp.LastName AS EmployeeName
 FROM chinook.employees sup
 JOIN chinook.employees emp
@@ -118,13 +106,11 @@ ON emp.ReportsTo=sup.EmployeeId
 ORDER BY SupervisorName;
 
 -- 13. Show customers whose company is on file.
-
 SELECT FirstName, LastName, Company
 FROM chinook.customers
 WHERE Company IS NOT NULL;
 
 -- 14. Show customers who purchased more than one item at one time.
-
 SELECT cust.FirstName, cust.LastName, inv.InvoiceId, inv.InvoiceDate, inv.Total
 FROM chinook.customers cust
 JOIN chinook.invoices inv ON cust.CustomerId=inv.CustomerId
@@ -132,24 +118,21 @@ WHERE inv.Total<>0.99
 ORDER BY cust.LastName, inv.InvoiceDate;
 
 -- 15. How many employees belong to each role?
-
 SELECT FirstName, LastName, Title, COUNT(Title) OVER (PARTITION BY Title) As TotalEmpsInRole
 FROM chinook.employees
 ORDER BY Title;
 
 -- 16. What is the average amount spent per purchase? Who are the customers that spend more than average in one purchase?
-
 SELECT AVG(inv.Total)
-FROM chinook.invoices;
+FROM chinook.invoices inv;
 
 SELECT cust.CustomerId, cust.FirstName, cust.LastName, ROUND(AVG(inv.Total), 2) AS AvgSpent
 FROM chinook.customers cust
 JOIN chinook.invoices inv ON cust.CustomerId=inv.CustomerId
 GROUP BY cust.CustomerId
-HAVING AvgSpent>(SELECT AVG(inv.Total) FROM chinook.invoices inv);
+HAVING AVG(inv.Total)>(SELECT AVG(inv.Total) FROM chinook.invoices inv);
 
 -- 17. How many items has each customer purchased?
-
 SELECT cust.CustomerId, cust.FirstName, cust.LastName, COUNT(invit.InvoiceLineId) AS TotalItemsPurchased
 FROM chinook.customers cust
 JOIN chinook.invoices inv ON inv.CustomerId=cust.CustomerId
@@ -157,7 +140,6 @@ JOIN chinook.invoice_items invit ON invit.InvoiceId=inv.InvoiceId
 GROUP BY cust.CustomerId;
 
 -- 18. Which customer has spent the most in the US?
-
 SELECT cust.CustomerId, cust.FirstName ||' '|| cust.LastName, cust.Country, SUM(inv.Total) AS TotalSpent
 FROM chinook.customers cust
 JOIN chinook.invoices inv
@@ -168,7 +150,6 @@ ORDER BY TotalSpent DESC
 LIMIT 1;
 
 -- 19. Provide a query that shows all the Tracks, and include the Album name, Media type, and Genre.
-
 SELECT t.Name AS TrackName, al.Title AS AlbumName, m.Name AS MediaType, g.Name AS Genre
 FROM chinook.tracks t
 JOIN chinook.albums al ON t.AlbumId=al.AlbumId
@@ -176,7 +157,6 @@ JOIN chinook.media_types m ON t.MediaTypeId=m.MediaTypeId
 JOIN chinook.genres g ON g.GenreId=t.GenreId;
 
 -- 20. Show the total sales made by each sales agent.
-
 SELECT emp.FirstName ||' '|| emp.LastName AS FullName, ROUND(SUM(inv.Total),2) AS TotalSales
 FROM chinook.employees emp
 JOIN chinook.customers cust ON cust.SupportRepId=emp.EmployeeId
@@ -185,7 +165,6 @@ WHERE emp.Title='Sales Support Agent'
 GROUP BY FullName;
 
 -- 21. Which sales agent made the most dollars in sales in 2009?
-
 SELECT emp.FirstName ||' '|| emp.LastName AS FullName, ROUND(SUM(inv.Total),2) AS TotalSales
 FROM chinook.employees emp
 JOIN chinook.customers cust ON cust.SupportRepId=emp.EmployeeId
